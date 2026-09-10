@@ -22,4 +22,12 @@ npm run dev
 
 Kemudian buka alamat yang diberikan Vite.
 
+## Supabase
+
+1. Jalankan isi `supabase-schema.sql` di Supabase Dashboard > SQL Editor.
+2. Pastikan `VITE_PUBLIC_SUPABASE_URL` dan `VITE_PUBLIC_SUPABASE_ANON_KEY` tersedia di `.env.local` dan environment Vercel.
+3. Aktifkan atau nonaktifkan konfirmasi email di Supabase Authentication sesuai alur deployment yang diinginkan.
+
+Data planner disimpan di `public.wedding_plans` sebagai JSON per user dan dilindungi Row Level Security.
+
 > Karena versi ini sengaja mempertahankan React UMD + Babel Standalone + CDN seperti file asli, file JSX di-load berurutan sebagai script Babel, bukan diubah menjadi sistem import/export.

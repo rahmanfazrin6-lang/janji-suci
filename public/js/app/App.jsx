@@ -1,6 +1,7 @@
 /* ═══════════════ MAIN APP ═══════════════ */
 function App() {
   const [screen, setScreen] = useState('register'); // register | login | dashEmpty | setup | loading | app
+  const [authLoading, setAuthLoading] = useState(true);
   const [page, setPage] = useState('dashboard');
   const [lastMobilePrimary, setLastMobilePrimary] = useState('dashboard');
   const [user, setUser] = useState(null);
@@ -24,8 +25,76 @@ function App() {
   const [dismissedReminders, setDismissedReminders] = useState([]);
   const [customReminders, setCustomReminders] = useState([]);
 
-  const handleLogin = (u) => { setUser(u); setScreen('dashEmpty'); };
-  const handleLogout = () => { setUser(null); setScreen('register'); setPage('dashboard'); };
+  const applySavedData = (saved) => {
+    if (!saved) return;
+    setProject(saved.project || null);
+    setChecklist(saved.checklist || []);
+    setRundown(saved.rundown || []);
+    setGuests(saved.guests || []);
+    setUndanganLink(saved.undanganLink || '');
+    setVendors(saved.vendors || [{id:1,name:'',cat:'Katering',contact:'',status:'belum',harga:'',note:''}]);
+    setDocs(saved.docs || DOC_DEFAULT);
+    setSeserahan(saved.seserahan || []);
+    setMoodNotes(saved.moodNotes || []);
+    setMoodTags(saved.moodTags || []);
+    setPalette(saved.palette || []);
+    setInspirationItems(saved.inspirationItems || []);
+    setBudgetItems(saved.budgetItems || seedBudgetItems(saved.project?.budget));
+    setDismissedReminders(saved.dismissedReminders || []);
+    setCustomReminders(saved.customReminders || []);
+  };
+
+  useEffect(() => {
+    let active = true;
+    getSupabaseSession().then(async (session) => {
+      if (!active) return;
+      if (session?.user) {
+        const saved = await loadSupabaseAppData();
+        applySavedData(saved);
+        setUser(getSupabaseUser(session.user));
+        setScreen(saved?.project ? 'app' : 'dashEmpty');
+      }
+    }).catch(() => {
+      if (active) setScreen('register');
+    }).finally(() => {
+      if (active) setAuthLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!user || authLoading) return;
+    const appData = {
+      project, checklist, rundown, guests, undanganLink, vendors, docs, seserahan,
+      moodNotes, moodTags, palette, inspirationItems, budgetItems,
+      dismissedReminders, customReminders,
+    };
+    const timer = setTimeout(() => {
+      saveSupabaseAppData(appData).catch(error => console.error('Gagal menyimpan data:', error));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [user, authLoading, project, checklist, rundown, guests, undanganLink, vendors, docs, seserahan, moodNotes, moodTags, palette, inspirationItems, budgetItems, dismissedReminders, customReminders]);
+
+  const handleAuth = async (credentials, mode) => {
+    const supabaseUser = mode === 'register'
+      ? await registerWithSupabase(credentials)
+      : await loginWithSupabase(credentials);
+    const session = await getSupabaseSession();
+    if (!session) throw new Error('Akun berhasil dibuat. Silakan konfirmasi email sebelum masuk.');
+    const appData = await loadSupabaseAppData();
+    applySavedData(appData);
+    setUser(getSupabaseUser(supabaseUser));
+    if (appData?.project) {
+      setProject(appData.project);
+      setScreen('app');
+    } else {
+      setScreen('dashEmpty');
+    }
+  };
+  const handleLogout = async () => {
+    await logoutFromSupabase();
+    setUser(null); setScreen('register'); setPage('dashboard');
+  };
 
   const onUpdateBudget = (newAmount) => {
     setProject(p => ({ ...p, budget: newAmount }));
@@ -133,8 +202,9 @@ Buat 10-14 item dari persiapan pagi hingga penutupan resepsi. Isi lokasi dengan 
     }
   };
 
-  if (screen==='register') return <RegisterScreen onLogin={handleLogin} onGoLogin={()=>setScreen('login')}/>;
-  if (screen==='login') return <LoginScreen onLogin={handleLogin} onGoRegister={()=>setScreen('register')}/>;
+  if (authLoading) return <LoadingScreen step={0}/>;
+  if (screen==='register') return <RegisterScreen onLogin={(credentials)=>handleAuth(credentials, 'register')} onGoLogin={()=>setScreen('login')}/>;
+  if (screen==='login') return <LoginScreen onLogin={(credentials)=>handleAuth(credentials, 'login')} onGoRegister={()=>setScreen('register')}/>;
   if (screen==='dashEmpty') return <DashboardEmptyScreen user={user} onSetup={()=>setScreen('setup')} onLogout={handleLogout}/>;
   if (screen==='setup') return <SetupScreen initial={project} onSave={handleSaveSetup} onBack={()=>setScreen(project?'app':'dashEmpty')}/>;
   if (screen==='loading') return <LoadingScreen step={loadStep}/>;

@@ -2,7 +2,15 @@
 function LoginScreen({ onLogin, onGoRegister }) {
   const [f, setF] = useState({ email:'', pass:'' });
   const set = (k,v) => setF(p=>({...p,[k]:v}));
-  const handle = () => onLogin({ nama: 'Mempelai', email: f.email || 'user@email.com' });
+  const [err, setErr] = useState('');
+  const handle = async () => {
+    if (!f.email || !f.pass) { setErr('Email dan password wajib diisi.'); return; }
+    try {
+      await onLogin({ email: f.email, password: f.pass });
+    } catch (error) {
+      setErr(error.message || 'Login gagal. Silakan coba lagi.');
+    }
+  };
   return (
     <AuthLayout>
       <div className="anim-fadeup flex flex-col items-center lg:items-start text-center lg:text-left">
@@ -14,6 +22,7 @@ function LoginScreen({ onLogin, onGoRegister }) {
         <div className="w-full space-y-4">
           <div><label className="lbl">Email</label><input className="inp" type="email" placeholder="nama@email.com" value={f.email} onChange={e=>set('email',e.target.value)}/></div>
           <div><label className="lbl">Password</label><PasswordInput value={f.pass} onChange={e=>set('pass',e.target.value)} placeholder="Masukkan password"/></div>
+          {err && <p className="text-sm text-red-500 bg-red-50 px-4 py-2 rounded-xl">{err}</p>}
           <button className="btn-sage" onClick={handle}>Masuk</button>
           <div className="flex justify-between items-center pt-1">
             <button className="btn-ghost text-sm" style={{color:'#7a9482'}} onClick={onGoRegister}>Kembali</button>

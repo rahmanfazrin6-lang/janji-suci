@@ -42,12 +42,16 @@ function RegisterScreen({ onLogin, onGoLogin }) {
   const [f, setF] = useState({ nama:'', email:'', pass:'', kode:'' });
   const [err, setErr] = useState('');
   const set = (k,v) => setF(p=>({...p,[k]:v}));
-  const handle = () => {
+  const handle = async () => {
     if (!f.nama||!f.email||!f.pass) { setErr('Nama, email, dan password wajib diisi.'); return; }
     if (f.pass.length < 6) { setErr('Password minimal 6 karakter.'); return; }
     if (!/[A-Z]/.test(f.pass)) { setErr('Password harus mengandung minimal 1 huruf besar.'); return; }
     setErr('');
-    onLogin({ nama: f.nama, email: f.email });
+    try {
+      await onLogin({ nama: f.nama, email: f.email, password: f.pass });
+    } catch (error) {
+      setErr(error.message || 'Pendaftaran gagal. Silakan coba lagi.');
+    }
   };
   return (
     <AuthLayout>
