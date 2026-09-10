@@ -1,0 +1,7 @@
+{
+  "name": "janji-suci-wedding-planner",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "dev": "vite", "preview": "vite preview", "build": "vite build" },
+  "devDependencies": { "vite": "^7.1.4" }
+}
